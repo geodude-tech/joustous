@@ -15,6 +15,17 @@ test('pack select shows three options and starts the chosen game', async ({ page
   await expect(page.getByTestId('board')).toBeVisible();
 });
 
+test('rules can be viewed from pack select and dismissed', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('show-rules').click();
+  await expect(page.getByTestId('rules')).toBeVisible();
+  await expect(page.getByTestId('rules')).toContainText('Goal');
+  await page.screenshot({ path: 'e2e/screenshots/06-rules.png' });
+  await page.getByTestId('rules-back').click();
+  await expect(page.getByTestId('rules')).toHaveCount(0);
+  await expect(page.getByTestId('pack-basic')).toBeVisible();
+});
+
 test('board, hands and status render on mobile viewport', async ({ page }) => {
   await expect(page.getByTestId('board')).toBeVisible();
   await expect(page.locator('.cell')).toHaveCount(9);
@@ -67,11 +78,12 @@ async function playOneMove(page: Page): Promise<boolean> {
 
 test('human can select a card and play a move', async ({ page }) => {
   await waitForMyTurn(page);
-  const before = await page.locator('[data-testid="board"] .card').count();
+  // Board count can stay flat if the move pushes a card off the edge,
+  // so assert on the deck counter, which always drops by one per move.
+  const deckText = (await page.locator('.panel.you .deck-info').textContent())!;
+  const before = Number(deckText.match(/\d+/)![0]);
   await playOneMove(page);
-  await expect
-    .poll(async () => page.locator('[data-testid="board"] .card').count())
-    .toBeGreaterThan(before);
+  await expect(page.locator('.panel.you .deck-info')).toHaveText(`Your deck: ${before - 1}`);
   await page.screenshot({ path: 'e2e/screenshots/02-after-move.png' });
 });
 

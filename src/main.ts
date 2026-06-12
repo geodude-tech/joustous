@@ -14,13 +14,13 @@ let ui: UiState;
 
 function showPackSelect(): void {
   state = newGame();
-  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: true };
+  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: true, showRules: false };
   draw();
 }
 
 function start(pack: Pack): void {
   state = newGame(Math.random, pack);
-  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: false };
+  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: false, showRules: false };
   state.result = checkEnd(state);
   draw();
   maybeAiTurn();
@@ -71,6 +71,10 @@ function draw(): void {
     },
     onNewGame: showPackSelect,
     onChoosePack: start,
+    onToggleRules(show) {
+      ui.showRules = show;
+      draw();
+    },
   });
 }
 

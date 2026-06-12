@@ -17,6 +17,7 @@ export interface UiState {
   message: string | null;
   aiCell: { row: number; col: number } | null;
   packSelect: boolean;
+  showRules: boolean;
 }
 
 export interface RenderCallbacks {
@@ -26,6 +27,7 @@ export interface RenderCallbacks {
   onNewGame(): void;
   onChoosePack(pack: Pack): void;
   onCancelPush(): void;
+  onToggleRules(show: boolean): void;
 }
 
 const PACKS: { pack: Pack; label: string; blurb: string }[] = [
@@ -201,6 +203,37 @@ export function render(
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
     overlay.dataset.testid = 'pack-select';
+    if (ui.showRules) {
+      overlay.innerHTML = `<h1>How to Play</h1>`;
+      const rules = document.createElement('div');
+      rules.className = 'rules-panel';
+      rules.dataset.testid = 'rules';
+      rules.innerHTML = `
+        <p><b>Goal:</b> hold the most gems when the game ends. A gem is held by
+        whoever's card sits on its square.</p>
+        <p><b>On your turn</b> you must play a card from your hand:</p>
+        <ul>
+          <li><b>Place</b> it on any empty square that has no gem.</li>
+          <li><b>Push</b>: play it onto an occupied square in a direction your
+          card has an arrow for. The card there (and any chain of cards behind
+          it) slides one square.</li>
+        </ul>
+        <p><b>Blocking:</b> a push fails if any card in the chain has an arrow
+        pointing back at you.</p>
+        <p><b>Gems</b> can only be claimed by pushing a card onto a gem square
+        — you can't place onto one directly.</p>
+        <p><b>Off the board:</b> cards pushed off the edge are gone for good.</p>
+        <p><b>Game ends</b> when the board is full or a player can't move or
+        runs out of cards. Most gems wins; a tie is a draw.</p>`;
+      overlay.appendChild(rules);
+      const back = document.createElement('button');
+      back.dataset.testid = 'rules-back';
+      back.textContent = 'Back';
+      back.addEventListener('click', () => cb.onToggleRules(false));
+      overlay.appendChild(back);
+      root.appendChild(overlay);
+      return;
+    }
     overlay.innerHTML = `<h1>Joustus</h1><p>Choose a card pack</p>`;
     for (const { pack, label, blurb } of PACKS) {
       const btn = document.createElement('button');
@@ -210,6 +243,12 @@ export function render(
       btn.addEventListener('click', () => cb.onChoosePack(pack));
       overlay.appendChild(btn);
     }
+    const rulesBtn = document.createElement('button');
+    rulesBtn.className = 'rules-btn';
+    rulesBtn.dataset.testid = 'show-rules';
+    rulesBtn.textContent = 'How to Play';
+    rulesBtn.addEventListener('click', () => cb.onToggleRules(true));
+    overlay.appendChild(rulesBtn);
     root.appendChild(overlay);
     return;
   }
