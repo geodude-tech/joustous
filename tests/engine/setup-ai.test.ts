@@ -90,4 +90,36 @@ describe('AI', () => {
     const move = chooseMove(state, rng(9));
     expect(move).toEqual({ type: 'push', handIndex: 0, row: 1, col: 0, direction: 'E' });
   });
+
+  it('prefers developing toward an open gem over a pointless push', () => {
+    // Blue's lone card is pushable but far from the gem; shoving it achieves
+    // nothing. Red should place next to the open gem instead of bullying.
+    const state = newGame(rng(5));
+    const board = state.board;
+    for (const row of board) for (const cell of row) { cell.gem = false; cell.placed = null; }
+    board[0][2].gem = true;
+    board[2][0].placed = { card: { id: 'x', name: 'x', arrows: [], portraitIndex: 0 }, owner: 'blue' };
+    state.hands.red = [{ id: 'r', name: 'r', arrows: ['E'], portraitIndex: 1 }];
+    state.hands.blue = [{ id: 'b', name: 'b', arrows: [], portraitIndex: 2 }];
+    state.turn = 'red';
+    for (let i = 0; i < 10; i++) {
+      const move = chooseMove(state, rng(i + 1));
+      expect(move.type).toBe('place');
+      // adjacent to the gem at [0][2]
+      expect([`0,1`, `1,2`]).toContain(`${move.row},${move.col}`);
+    }
+  });
+
+  it('pushes the opponent off a gem to deny it', () => {
+    const state = newGame(rng(7));
+    const board = state.board;
+    for (const row of board) for (const cell of row) { cell.gem = false; cell.placed = null; }
+    board[1][1].gem = true;
+    board[1][1].placed = { card: { id: 'x', name: 'x', arrows: [], portraitIndex: 0 }, owner: 'blue' };
+    state.hands.red = [{ id: 'r', name: 'r', arrows: ['E'], portraitIndex: 1 }];
+    state.hands.blue = [{ id: 'b', name: 'b', arrows: [], portraitIndex: 2 }];
+    state.turn = 'red';
+    const move = chooseMove(state, rng(9));
+    expect(move).toEqual({ type: 'push', handIndex: 0, row: 1, col: 1, direction: 'E' });
+  });
 });
