@@ -65,6 +65,28 @@ describe('difficulty levels', () => {
     },
   );
 
+  it.each<Difficulty>(['easy', 'medium', 'hard'])(
+    '%s does not bully a harmless opponent card',
+    (difficulty) => {
+      // Blue's corner card threatens nothing (no arrows anywhere in blue's
+      // hand); red could shove it off the board but should develop instead.
+      const board = emptyBoard();
+      board[2][0].gem = true;
+      board[0][2].placed = { card: card('x', []), owner: 'blue' };
+      const state = makeState({
+        board,
+        hand: [card('b1', []), card('b2', [])],
+        deck: [card('bd1', []), card('bd2', [])],
+        redHand: [card('r', ['E'])],
+        redDeck: [card('rd1', []), card('rd2', [])],
+        turn: 'red',
+      });
+      for (let i = 1; i <= 5; i++) {
+        expect(chooseMove(state, rng(i), difficulty).type).toBe('place');
+      }
+    },
+  );
+
   it('hard (blue) beats easy (red) over a series of games', () => {
     const wins = { blue: 0, red: 0, draw: 0 };
     for (let seed = 1; seed <= 8; seed++) {

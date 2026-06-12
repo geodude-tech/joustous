@@ -9,12 +9,20 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 const SEARCH_DEPTH: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
 
 const GEM = 100;
+// Opponent gems count slightly less than own: play for tempo, racing for open
+// gems instead of turtling over the opponent's.
+const OPP_GEM = 0.8;
 const MATERIAL = 5;
 const ADJACENCY = 3;
 const WIN = 10_000;
 // Tiny root bonus for the position right after the AI's move: when two lines
 // back up the same score, it claims now instead of two plies later.
 const TEMPO = 0.01;
+// Pushing an opponent card without changing any gem's owner is bullying: it
+// reads as harassment and wastes tempo. Outweighs the material + adjacency
+// gain of shoving a card off the board, but not a real gem defense, which
+// search values at ~GEM.
+const HARASS = 15;
 
 function material(state: GameState, me: Player): number {
   let m = 0;
@@ -26,7 +34,9 @@ function material(state: GameState, me: Player): number {
   return m;
 }
 
-/** Cards orthogonally adjacent to unclaimed gems: mine minus theirs. */
+/** Own cards orthogonally adjacent to unclaimed gems. Only own cards count:
+ *  rewarding denial of the opponent's adjacency made shoving their cards
+ *  around score higher than developing. Real threats are caught by search. */
 function gemAdjacency(state: GameState, me: Player): number {
   let a = 0;
   for (let r = 0; r < BOARD_SIZE; r++) {
@@ -35,7 +45,7 @@ function gemAdjacency(state: GameState, me: Player): number {
       if (!cell.gem || cell.placed) continue;
       for (const [dr, dc] of Object.values(DELTAS)) {
         const n = state.board[r + dr]?.[c + dc];
-        if (n?.placed) a += n.placed.owner === me ? 1 : -1;
+        if (n?.placed?.owner === me) a++;
       }
     }
   }
@@ -45,7 +55,7 @@ function gemAdjacency(state: GameState, me: Player): number {
 function evaluate(state: GameState, me: Player): number {
   const gems = countGems(state);
   return (
-    GEM * (gems[me] - gems[otherPlayer(me)]) +
+    GEM * (gems[me] - OPP_GEM * gems[otherPlayer(me)]) +
     MATERIAL * material(state, me) +
     ADJACENCY * gemAdjacency(state, me)
   );
@@ -109,11 +119,16 @@ export function chooseMove(
 
   const depth = SEARCH_DEPTH[difficulty];
   const me = state.turn;
+  const gemsBefore = countGems(state);
   let best: Move[] = [];
   let bestScore = -Infinity;
   for (const move of moves) {
     const next = applyMove(state, move);
-    const score = search(next, depth - 1, -Infinity, Infinity, me) + TEMPO * evaluate(next, me);
+    let score = search(next, depth - 1, -Infinity, Infinity, me) + TEMPO * evaluate(next, me);
+    if (move.type === 'push' && state.board[move.row][move.col].placed?.owner !== me) {
+      const gemsAfter = countGems(next);
+      if (gemsAfter.blue === gemsBefore.blue && gemsAfter.red === gemsBefore.red) score -= HARASS;
+    }
     if (score > bestScore) {
       bestScore = score;
       best = [move];
