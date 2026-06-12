@@ -41,3 +41,6 @@ Push to `main` auto-deploys: `.github/workflows/deploy.yml` runs vitest, builds,
 publishes `dist/` to GitHub Pages at https://geodude-tech.github.io/joustous/.
 `vite.config.ts` uses `base: './'` so the app works under the `/joustous/` subpath —
 keep paths relative.
+
+Workflow: each feature increment is its own commit, committed and pushed only after
+the user approves it.
