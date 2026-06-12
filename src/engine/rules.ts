@@ -1,4 +1,4 @@
-import type { Board, Direction, GameState, Move, PushMove } from './types';
+import type { Board, Direction, GameState, Move, Player, PushMove } from './types';
 import { BOARD_SIZE, DELTAS, OPPOSITE, otherPlayer } from './types';
 
 function inBounds(row: number, col: number): boolean {
@@ -63,6 +63,41 @@ export function pushChain(
     c += dc;
   }
   return chain;
+}
+
+export interface PushPreview {
+  /** Cells (in chain order) whose cards slide. */
+  chain: [number, number][];
+  /** Gem cells whose holder changes, with the new owner. */
+  claims: { row: number; col: number; owner: Player }[];
+  /** Current cells of cards that would slide off the board. */
+  falls: [number, number][];
+}
+
+/** What a push would do, for UI previews. Assumes the move is legal. */
+export function previewPush(state: GameState, move: PushMove): PushPreview {
+  const chain = pushChain(state.board, move.row, move.col, move.direction);
+  const next = applyMove(state, move);
+
+  const claims: PushPreview['claims'] = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const before = state.board[r][c];
+      const after = next.board[r][c];
+      if (before.gem && after.placed && after.placed.owner !== before.placed?.owner) {
+        claims.push({ row: r, col: c, owner: after.placed.owner });
+      }
+    }
+  }
+
+  const falls: PushPreview['falls'] = [];
+  const last = chain[chain.length - 1];
+  if (last) {
+    const [dr, dc] = DELTAS[move.direction];
+    if (!inBounds(last[0] + dr, last[1] + dc)) falls.push(last);
+  }
+
+  return { chain, claims, falls };
 }
 
 function resolvePush(board: Board, move: PushMove): void {

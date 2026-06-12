@@ -52,8 +52,10 @@ function draw(): void {
       const directions = options
         .filter((m): m is Extract<Move, { type: 'push' }> => m.type === 'push')
         .map((m) => m.direction);
-      ui.pendingPush = { row, col, directions };
-      ui.message = 'Confirm push direction';
+      // A single direction is pre-armed: one tap previews and confirms.
+      const armed = directions.length === 1 ? directions[0] : null;
+      ui.pendingPush = { row, col, directions, armed };
+      ui.message = armed ? 'Tap the arrow to push' : 'Tap an arrow to preview';
       draw();
     },
     onCancelPush() {
@@ -64,6 +66,12 @@ function draw(): void {
     onPickDirection(direction: Direction) {
       const pending = ui.pendingPush;
       if (!pending) return;
+      if (pending.armed !== direction) {
+        pending.armed = direction;
+        ui.message = 'Tap again to confirm';
+        draw();
+        return;
+      }
       const move = movesForSelection().find(
         (m) => m.type === 'push' && m.row === pending.row && m.col === pending.col && m.direction === direction,
       );

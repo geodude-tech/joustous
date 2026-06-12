@@ -1,7 +1,7 @@
 import type { Card, Direction, GameState, Move } from '../engine/types';
 import type { Pack } from '../engine/cards';
 import { countGems } from '../engine/game';
-import { pushChain } from '../engine/rules';
+import { pushChain, previewPush } from '../engine/rules';
 
 const ARROW_GLYPHS: Record<Direction, string> = { N: '▲', E: '▶', S: '▼', W: '◀' };
 const SHEET_COLS = 12;
@@ -13,7 +13,7 @@ const SHEET_H = 496;
 
 export interface UiState {
   selectedHandIndex: number | null;
-  pendingPush: { row: number; col: number; directions: Direction[] } | null;
+  pendingPush: { row: number; col: number; directions: Direction[]; armed: Direction | null } | null;
   message: string | null;
   aiCell: { row: number; col: number } | null;
   packSelect: boolean;
@@ -86,11 +86,27 @@ export function render(
 
   // Cells whose cards would slide for the pending push: key "r,c" -> directions
   const slideMarks = new Map<string, Direction[]>();
+  // Gem cells changing hands ("r,c" -> new owner) and cards sliding off the board.
+  const claimMarks = new Map<string, 'blue' | 'red'>();
+  const fallMarks = new Set<string>();
   if (ui.pendingPush) {
-    for (const dir of ui.pendingPush.directions) {
-      for (const [r, c] of pushChain(state.board, ui.pendingPush.row, ui.pendingPush.col, dir)) {
-        const key = `${r},${c}`;
-        slideMarks.set(key, [...(slideMarks.get(key) ?? []), dir]);
+    const { row, col, directions, armed } = ui.pendingPush;
+    if (armed) {
+      const move = legalForSelection.find(
+        (m) => m.type === 'push' && m.row === row && m.col === col && m.direction === armed,
+      );
+      if (move && move.type === 'push') {
+        const preview = previewPush(state, move);
+        for (const [r, c] of preview.chain) slideMarks.set(`${r},${c}`, [armed]);
+        for (const claim of preview.claims) claimMarks.set(`${claim.row},${claim.col}`, claim.owner);
+        for (const [r, c] of preview.falls) fallMarks.add(`${r},${c}`);
+      }
+    } else {
+      for (const dir of directions) {
+        for (const [r, c] of pushChain(state.board, row, col, dir)) {
+          const key = `${r},${c}`;
+          slideMarks.set(key, [...(slideMarks.get(key) ?? []), dir]);
+        }
       }
     }
   }
@@ -130,6 +146,19 @@ export function render(
         ghost.textContent = marks.map((d) => ARROW_GLYPHS[d]).join('');
         cellEl.appendChild(ghost);
       }
+      const claim = claimMarks.get(`${r},${c}`);
+      if (claim) {
+        const badge = document.createElement('span');
+        badge.className = `claim-ghost ${claim}`;
+        badge.textContent = claim === 'blue' ? '+💎' : '−💎';
+        cellEl.appendChild(badge);
+      }
+      if (fallMarks.has(`${r},${c}`)) {
+        const doom = document.createElement('span');
+        doom.className = 'doom-ghost';
+        doom.textContent = '✕';
+        cellEl.appendChild(doom);
+      }
 
       if (ui.pendingPush && ui.pendingPush.row === r && ui.pendingPush.col === c) {
         const picker = document.createElement('div');
@@ -137,6 +166,7 @@ export function render(
         for (const dir of ui.pendingPush.directions) {
           const btn = document.createElement('button');
           btn.className = `d${dir.toLowerCase()}`;
+          if (ui.pendingPush.armed === dir) btn.classList.add('armed');
           btn.textContent = ARROW_GLYPHS[dir];
           btn.addEventListener('click', (e) => {
             e.stopPropagation();

@@ -287,7 +287,7 @@ body {
   font-size: calc(var(--cell) * 0.2);
   color: var(--gold);
   text-shadow: 0 0 3px #000, 0 0 5px #000;
-  z-index: 5;
+  z-index: 11;
   pointer-events: none;
   animation: ghost-blink 0.8s ease-in-out infinite;
 }
@@ -295,6 +295,47 @@ body {
 @keyframes ghost-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
+}
+
+/* Push preview: gem changing hands */
+.cell .claim-ghost {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: calc(var(--cell) * 0.18);
+  font-weight: bold;
+  padding: 1px 3px;
+  border-radius: 4px;
+  z-index: 11;
+  pointer-events: none;
+  animation: ghost-blink 0.8s ease-in-out infinite;
+  text-shadow: 0 0 3px #000;
+}
+
+.cell .claim-ghost.blue {
+  color: #fff;
+  background: var(--cyan-dark);
+  border: 1px solid var(--cyan);
+}
+
+.cell .claim-ghost.red {
+  color: #fff;
+  background: var(--red-dark);
+  border: 1px solid var(--red);
+}
+
+/* Push preview: card that would fall off the board */
+.cell .doom-ghost {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: calc(var(--cell) * 0.26);
+  font-weight: bold;
+  color: var(--red);
+  text-shadow: 0 0 3px #000, 0 0 6px #000;
+  z-index: 11;
+  pointer-events: none;
+  animation: ghost-blink 0.8s ease-in-out infinite;
 }
 
 /* Direction picker */
@@ -318,6 +359,13 @@ body {
   padding: 0;
   cursor: pointer;
   font-weight: bold;
+}
+
+.dir-picker button.armed {
+  background: #fff;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px 2px var(--gold);
+  animation: ghost-blink 0.8s ease-in-out infinite;
 }
 
 .dir-picker .cancel {

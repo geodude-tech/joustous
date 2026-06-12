@@ -69,7 +69,11 @@ async function playOneMove(page: Page): Promise<boolean> {
     if ((await targets.count()) > 0) {
       await targets.first().click();
       const picker = page.locator('.dir-picker button');
-      if ((await picker.count()) > 0) await picker.first().click();
+      if ((await picker.count()) > 0) {
+        await picker.first().click();
+        // Multi-direction pushes arm on the first tap and confirm on the second.
+        if ((await page.locator('.dir-picker').count()) > 0) await picker.first().click();
+      }
       return true;
     }
   }
