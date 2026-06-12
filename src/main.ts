@@ -5,7 +5,8 @@ import { newGame } from './engine/board';
 import { legalMoves, applyMove } from './engine/rules';
 import { checkEnd } from './engine/game';
 import { chooseMove } from './engine/ai';
-import { render, type UiState } from './ui/render';
+import { render, cardEl, type UiState } from './ui/render';
+import { installDragDrop } from './ui/drag';
 
 const root = document.getElementById('app')!;
 
@@ -14,13 +15,13 @@ let ui: UiState;
 
 function showPackSelect(): void {
   state = newGame();
-  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: true, showRules: false, difficulty: ui?.difficulty ?? 'medium', confirmExit: false };
+  ui = { selectedHandIndex: null, draggingHand: false, pendingPush: null, message: null, aiCell: null, packSelect: true, showRules: false, difficulty: ui?.difficulty ?? 'medium', confirmExit: false };
   draw();
 }
 
 function start(pack: Pack): void {
   state = newGame(Math.random, pack);
-  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: false, showRules: false, difficulty: ui.difficulty, confirmExit: false };
+  ui = { selectedHandIndex: null, draggingHand: false, pendingPush: null, message: null, aiCell: null, packSelect: false, showRules: false, difficulty: ui.difficulty, confirmExit: false };
   state.result = checkEnd(state);
   draw();
   maybeAiTurn();
@@ -41,23 +42,7 @@ function draw(): void {
       ui.message = ui.selectedHandIndex === null ? null : 'Tap a highlighted square';
       draw();
     },
-    onCellTap(row, col) {
-      const options = movesForSelection().filter((m) => m.row === row && m.col === col);
-      if (options.length === 0) return;
-      if (options[0].type === 'place') {
-        playMove(options[0]);
-        return;
-      }
-      // Pushes always preview: show direction picker + chain markers.
-      const directions = options
-        .filter((m): m is Extract<Move, { type: 'push' }> => m.type === 'push')
-        .map((m) => m.direction);
-      // A single direction is pre-armed: one tap previews and confirms.
-      const armed = directions.length === 1 ? directions[0] : null;
-      ui.pendingPush = { row, col, directions, armed };
-      ui.message = armed ? 'Tap the arrow to push' : 'Tap an arrow to preview';
-      draw();
-    },
+    onCellTap: tapCell,
     onCancelPush() {
       ui.pendingPush = null;
       ui.message = 'Tap a highlighted square';
@@ -98,11 +83,30 @@ function draw(): void {
   });
 }
 
+function tapCell(row: number, col: number): void {
+  const options = movesForSelection().filter((m) => m.row === row && m.col === col);
+  if (options.length === 0) return;
+  if (options[0].type === 'place') {
+    playMove(options[0]);
+    return;
+  }
+  // Pushes always preview: show direction picker + chain markers.
+  const directions = options
+    .filter((m): m is Extract<Move, { type: 'push' }> => m.type === 'push')
+    .map((m) => m.direction);
+  // A single direction is pre-armed: one tap previews and confirms.
+  const armed = directions.length === 1 ? directions[0] : null;
+  ui.pendingPush = { row, col, directions, armed };
+  ui.message = armed ? 'Tap the arrow to push' : 'Tap an arrow to preview';
+  draw();
+}
+
 function playMove(move: Move): void {
   const prev = captureRects();
   state = applyMove(state, move);
   state.result = checkEnd(state);
   ui.selectedHandIndex = null;
+  ui.draggingHand = false;
   ui.pendingPush = null;
   ui.message = null;
   ui.aiCell = null;
@@ -166,5 +170,41 @@ function animateFrom(prev: Map<string, DOMRect>): void {
     });
   }
 }
+
+installDragDrop(root, {
+  canDrag(handIndex) {
+    return (
+      !state.result &&
+      state.turn === 'blue' &&
+      !ui.packSelect &&
+      !ui.confirmExit &&
+      handIndex < state.hands.blue.length
+    );
+  },
+  makeGhost(handIndex) {
+    const ghost = cardEl(state.hands.blue[handIndex], 'blue');
+    ghost.classList.add('drag-ghost');
+    return ghost;
+  },
+  onDragStart(handIndex) {
+    ui.selectedHandIndex = handIndex;
+    ui.draggingHand = true;
+    ui.pendingPush = null;
+    ui.aiCell = null;
+    ui.message = 'Drop on a highlighted square';
+    draw();
+  },
+  onDragEnd(cell) {
+    ui.draggingHand = false;
+    if (cell) {
+      ui.message = null;
+      tapCell(cell.row, cell.col);
+    } else {
+      // Dropped outside the board: keep the card selected for a tap follow-up.
+      ui.message = 'Tap a highlighted square';
+      draw();
+    }
+  },
+});
 
 showPackSelect();

@@ -14,6 +14,7 @@ const SHEET_H = 496;
 
 export interface UiState {
   selectedHandIndex: number | null;
+  draggingHand: boolean;
   pendingPush: { row: number; col: number; directions: Direction[]; armed: Direction | null } | null;
   message: string | null;
   aiCell: { row: number; col: number } | null;
@@ -220,7 +221,11 @@ export function render(
   hand.dataset.testid = 'hand';
   state.hands.blue.forEach((card, i) => {
     const el = cardEl(card, 'blue');
-    if (i === ui.selectedHandIndex) el.classList.add('selected');
+    el.dataset.handIndex = String(i);
+    if (i === ui.selectedHandIndex) {
+      el.classList.add('selected');
+      if (ui.draggingHand) el.classList.add('drag-source');
+    }
     el.addEventListener('click', () => cb.onSelectHand(i));
     hand.appendChild(el);
   });

@@ -123,6 +123,49 @@ test('push preview shows picker with chain ghost and can be cancelled', async ({
   throw new Error('never found a push target');
 });
 
+test('card can be dragged onto a highlighted square to play it', async ({ page }) => {
+  await waitForMyTurn(page);
+  const deckText = (await page.locator('.panel.you .deck-info').textContent())!;
+  const before = Number(deckText.match(/\d+/)![0]);
+
+  const card = page.locator('[data-testid="hand"] .card').first();
+  const box = (await card.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  // Cross the drag threshold: ghost appears and legal tiles light up.
+  await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2 - 25, { steps: 5 });
+  await expect(page.locator('.drag-ghost')).toBeVisible();
+  const target = page.locator('.cell.legal-target:not(:has(.card))').first();
+  await expect(target).toBeVisible();
+
+  const tbox = (await target.boundingBox())!;
+  await page.mouse.move(tbox.x + tbox.width / 2, tbox.y + tbox.height / 2, { steps: 8 });
+  await expect(target).toHaveClass(/drop-hover/);
+  await page.screenshot({ path: 'e2e/screenshots/07-drag-drop.png' });
+  await page.mouse.up();
+
+  await expect(page.locator('.drag-ghost')).toHaveCount(0);
+  await expect(page.locator('.panel.you .deck-info')).toHaveText(`Your deck: ${before - 1}`);
+});
+
+test('drag released off the board keeps the card selected without playing', async ({ page }) => {
+  await waitForMyTurn(page);
+  const deckText = (await page.locator('.panel.you .deck-info').textContent())!;
+  const before = Number(deckText.match(/\d+/)![0]);
+
+  const card = page.locator('[data-testid="hand"] .card').first();
+  const box = (await card.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 5 });
+  await expect(page.locator('.drag-ghost')).toBeVisible();
+  await page.mouse.up();
+
+  await expect(page.locator('.drag-ghost')).toHaveCount(0);
+  await expect(card).toHaveClass(/selected/);
+  await expect(page.locator('.panel.you .deck-info')).toHaveText(`Your deck: ${before}`);
+});
+
 test('exit button confirms before returning to the menu', async ({ page }) => {
   await expect(page.getByTestId('board')).toBeVisible();
   await page.getByTestId('exit-game').click();

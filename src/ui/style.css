@@ -280,12 +280,40 @@ body {
 [data-testid='hand'] .card {
   cursor: pointer;
   transition: transform 0.1s;
+  /* keep the browser from panning/scrolling while a card is dragged */
+  touch-action: none;
 }
 
 .hand .card.selected {
   transform: translateY(-6px);
   box-shadow: 0 0 12px var(--gold);
   border-color: var(--gold);
+}
+
+.hand .card.drag-source {
+  opacity: 0.35;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Floating copy of the card that follows the pointer during a drag */
+.card.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: var(--hand-card);
+  height: var(--hand-card);
+  transform: translate(-50%, -60%) scale(1.08);
+  pointer-events: none;
+  opacity: 0.9;
+  z-index: 60;
+  box-shadow: 0 6px 14px #000a, 0 0 12px var(--gold);
+}
+
+.cell.legal-target.drop-hover {
+  border-color: #fff;
+  background: #8d6c34;
+  box-shadow: 0 0 14px 4px #e8b832cc;
 }
 
 @media (orientation: landscape) {
