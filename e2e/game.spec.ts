@@ -9,6 +9,10 @@ test('pack select shows three options and starts the chosen game', async ({ page
   await page.goto('/');
   await expect(page.getByTestId('pack-select')).toBeVisible();
   await expect(page.locator('.pack-btn')).toHaveCount(3);
+  // Difficulty defaults to medium and can be switched before starting.
+  await expect(page.getByTestId('diff-medium')).toHaveClass(/selected/);
+  await page.getByTestId('diff-hard').click();
+  await expect(page.getByTestId('diff-hard')).toHaveClass(/selected/);
   await page.screenshot({ path: 'e2e/screenshots/00-pack-select.png' });
   await page.getByTestId('pack-intermediate').click();
   await expect(page.getByTestId('pack-select')).not.toBeVisible();

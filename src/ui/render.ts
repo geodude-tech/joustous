@@ -1,5 +1,6 @@
 import type { Card, Direction, GameState, Move } from '../engine/types';
 import type { Pack } from '../engine/cards';
+import type { Difficulty } from '../engine/ai';
 import { countGems } from '../engine/game';
 import { pushChain, previewPush } from '../engine/rules';
 
@@ -18,6 +19,7 @@ export interface UiState {
   aiCell: { row: number; col: number } | null;
   packSelect: boolean;
   showRules: boolean;
+  difficulty: Difficulty;
 }
 
 export interface RenderCallbacks {
@@ -26,9 +28,16 @@ export interface RenderCallbacks {
   onPickDirection(direction: Direction): void;
   onNewGame(): void;
   onChoosePack(pack: Pack): void;
+  onChooseDifficulty(difficulty: Difficulty): void;
   onCancelPush(): void;
   onToggleRules(show: boolean): void;
 }
+
+const DIFFICULTIES: { difficulty: Difficulty; label: string }[] = [
+  { difficulty: 'easy', label: 'Easy' },
+  { difficulty: 'medium', label: 'Medium' },
+  { difficulty: 'hard', label: 'Hard' },
+];
 
 const PACKS: { pack: Pack; label: string; blurb: string }[] = [
   { pack: 'basic', label: 'Basic', blurb: 'Starter cards, single arrows — learn the ropes' },
@@ -264,7 +273,22 @@ export function render(
       root.appendChild(overlay);
       return;
     }
-    overlay.innerHTML = `<h1>Joustus</h1><p>Choose a card pack</p>`;
+    overlay.innerHTML = `<h1>Joustus</h1><p>Opponent</p>`;
+    const diffRow = document.createElement('div');
+    diffRow.className = 'diff-row';
+    for (const { difficulty, label } of DIFFICULTIES) {
+      const btn = document.createElement('button');
+      btn.className = 'diff-btn';
+      if (ui.difficulty === difficulty) btn.classList.add('selected');
+      btn.dataset.testid = `diff-${difficulty}`;
+      btn.textContent = label;
+      btn.addEventListener('click', () => cb.onChooseDifficulty(difficulty));
+      diffRow.appendChild(btn);
+    }
+    overlay.appendChild(diffRow);
+    const packLabel = document.createElement('p');
+    packLabel.textContent = 'Choose a card pack';
+    overlay.appendChild(packLabel);
     for (const { pack, label, blurb } of PACKS) {
       const btn = document.createElement('button');
       btn.className = 'pack-btn';

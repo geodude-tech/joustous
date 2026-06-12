@@ -17,7 +17,7 @@ Vanilla TypeScript + Vite, no frameworks. Rules reference: `game_dynamics.md`.
   - `rules.ts` — `legalMoves`, `applyMove`, chain-push resolution; a push is blocked if **any** card in the chain has the opposing arrow
   - `game.ts` — `checkEnd`: deck-out loss, board-full / no-moves → most gems wins
   - `cards.ts` — card pool + packs (`basic`=1 arrow, `intermediate`=≤2, `advanced`=all); deck of 16, hand of 3
-  - `ai.ts` — greedy: gem differential ×10, push bonus +1, random tie-break
+  - `ai.ts` — alpha-beta minimax; depth = difficulty (easy 1 / medium 2 / hard 3), leaf eval gems/material/gem-adjacency, small root tempo bonus, random tie-break
 - `src/ui/render.ts` — full re-render per state change; `src/main.ts` wires callbacks, AI turn (1100 ms delay), and FLIP animations keyed on `data-cid`.
 - Gems are claimed only by *pushing* a card onto a gem square; direct placement on gem squares is illegal.
 

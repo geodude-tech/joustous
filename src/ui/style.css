@@ -414,6 +414,26 @@ body {
   cursor: pointer;
 }
 
+.diff-row {
+  display: flex;
+  gap: 8px;
+}
+
+.overlay .diff-btn {
+  font-size: 13px;
+  padding: 8px 16px;
+  border-color: #8a6a38;
+  color: #f0e6d2;
+  background: transparent;
+}
+
+.overlay .diff-btn.selected {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: #3a2f1d;
+  box-shadow: 0 0 8px #e8b83266;
+}
+
 .pack-btn {
   display: flex;
   flex-direction: column;

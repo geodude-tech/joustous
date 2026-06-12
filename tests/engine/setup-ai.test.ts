@@ -86,6 +86,8 @@ describe('AI', () => {
     board[1][1].gem = true;
     board[1][0].placed = { card: { id: 'x', name: 'x', arrows: [], portraitIndex: 0 }, owner: 'blue' };
     state.hands.blue = [{ id: 'a', name: 'a', arrows: ['E'], portraitIndex: 1 }];
+    // Pin red's hand so deeper search can't see a counter-steal and decline.
+    state.hands.red = [{ id: 'r0', name: 'r0', arrows: [], portraitIndex: 3 }];
     state.turn = 'blue';
     const move = chooseMove(state, rng(9));
     expect(move).toEqual({ type: 'push', handIndex: 0, row: 1, col: 0, direction: 'E' });

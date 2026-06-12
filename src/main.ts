@@ -14,13 +14,13 @@ let ui: UiState;
 
 function showPackSelect(): void {
   state = newGame();
-  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: true, showRules: false };
+  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: true, showRules: false, difficulty: ui?.difficulty ?? 'medium' };
   draw();
 }
 
 function start(pack: Pack): void {
   state = newGame(Math.random, pack);
-  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: false, showRules: false };
+  ui = { selectedHandIndex: null, pendingPush: null, message: null, aiCell: null, packSelect: false, showRules: false, difficulty: ui.difficulty };
   state.result = checkEnd(state);
   draw();
   maybeAiTurn();
@@ -79,6 +79,10 @@ function draw(): void {
     },
     onNewGame: showPackSelect,
     onChoosePack: start,
+    onChooseDifficulty(difficulty) {
+      ui.difficulty = difficulty;
+      draw();
+    },
     onToggleRules(show) {
       ui.showRules = show;
       draw();
@@ -104,7 +108,7 @@ function maybeAiTurn(): void {
   ui.message = null;
   setTimeout(() => {
     if (state.result || state.turn !== 'red' || ui.packSelect) return;
-    const move = chooseMove(state);
+    const move = chooseMove(state, Math.random, ui.difficulty);
     const prev = captureRects();
     state = applyMove(state, move);
     state.result = checkEnd(state);
