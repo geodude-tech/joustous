@@ -123,6 +123,20 @@ test('push preview shows picker with chain ghost and can be cancelled', async ({
   throw new Error('never found a push target');
 });
 
+test('exit button confirms before returning to the menu', async ({ page }) => {
+  await expect(page.getByTestId('board')).toBeVisible();
+  await page.getByTestId('exit-game').click();
+  await expect(page.getByTestId('confirm-exit')).toBeVisible();
+  // Keep playing: dialog closes, game continues
+  await page.getByTestId('confirm-exit-no').click();
+  await expect(page.getByTestId('confirm-exit')).toHaveCount(0);
+  await expect(page.getByTestId('board')).toBeVisible();
+  // Abandon: back to pack select
+  await page.getByTestId('exit-game').click();
+  await page.getByTestId('confirm-exit-yes').click();
+  await expect(page.getByTestId('pack-select')).toBeVisible();
+});
+
 test('full game vs AI reaches an end state', async ({ page }) => {
   test.setTimeout(180_000);
   for (let turn = 0; turn < 40; turn++) {

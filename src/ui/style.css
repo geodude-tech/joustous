@@ -79,6 +79,24 @@ body {
 
 .turn-banner.red-turn { background: var(--red-dark); }
 
+.exit-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #8a6a38;
+  background: transparent;
+  color: #f0e6d2;
+  cursor: pointer;
+}
+
+.confirm-row {
+  display: flex;
+  gap: 12px;
+}
+
 /* Orientation-aware layout: foe / board / you */
 .game {
   display: flex;

@@ -20,6 +20,7 @@ export interface UiState {
   packSelect: boolean;
   showRules: boolean;
   difficulty: Difficulty;
+  confirmExit: boolean;
 }
 
 export interface RenderCallbacks {
@@ -31,6 +32,8 @@ export interface RenderCallbacks {
   onChooseDifficulty(difficulty: Difficulty): void;
   onCancelPush(): void;
   onToggleRules(show: boolean): void;
+  onRequestExit(): void;
+  onCancelExit(): void;
 }
 
 const DIFFICULTIES: { difficulty: Difficulty; label: string }[] = [
@@ -88,6 +91,15 @@ export function render(
       ${state.result ? 'Game over' : state.turn === 'blue' ? 'Your turn' : 'Enemy turn…'}
     </span>
     <span class="gem-count red">Foe: ${gems.red}</span>`;
+  if (!state.result) {
+    const exit = document.createElement('button');
+    exit.className = 'exit-btn';
+    exit.dataset.testid = 'exit-game';
+    exit.textContent = '✕';
+    exit.title = 'Exit to menu';
+    exit.addEventListener('click', () => cb.onRequestExit());
+    status.appendChild(exit);
+  }
   root.appendChild(status);
 
   const game = document.createElement('div');
@@ -303,6 +315,28 @@ export function render(
     rulesBtn.textContent = 'How to Play';
     rulesBtn.addEventListener('click', () => cb.onToggleRules(true));
     overlay.appendChild(rulesBtn);
+    root.appendChild(overlay);
+    return;
+  }
+
+  // Exit confirmation overlay
+  if (ui.confirmExit) {
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.dataset.testid = 'confirm-exit';
+    overlay.innerHTML = `<h1>Abandon this game?</h1>`;
+    const row = document.createElement('div');
+    row.className = 'confirm-row';
+    const abandon = document.createElement('button');
+    abandon.dataset.testid = 'confirm-exit-yes';
+    abandon.textContent = 'Abandon';
+    abandon.addEventListener('click', () => cb.onNewGame());
+    const keep = document.createElement('button');
+    keep.dataset.testid = 'confirm-exit-no';
+    keep.textContent = 'Keep playing';
+    keep.addEventListener('click', () => cb.onCancelExit());
+    row.append(abandon, keep);
+    overlay.appendChild(row);
     root.appendChild(overlay);
     return;
   }
