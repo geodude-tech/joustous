@@ -31,6 +31,11 @@ export function legalMoves(state: GameState): Move[] {
   return moves;
 }
 
+/** Directions in which the chain starting at (row,col) can legally be pushed. */
+export function openPushDirections(board: Board, row: number, col: number): Direction[] {
+  return (Object.keys(DELTAS) as Direction[]).filter((d) => !chainBlocked(board, row, col, d));
+}
+
 /** A push is blocked if any card in the contiguous chain has an opposing arrow. */
 function chainBlocked(board: Board, row: number, col: number, direction: Direction): boolean {
   const [dr, dc] = DELTAS[direction];
@@ -126,12 +131,23 @@ export function applyMove(state: GameState, move: Move): GameState {
   const drawn = deck.shift();
   if (drawn) hand.push(drawn);
 
+  const justFlipped: [number, number][] = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const cell = board[r][c];
+      if (cell.gem && cell.placed && cell.placed.owner !== state.board[r][c].placed?.owner) {
+        justFlipped.push([r, c]);
+      }
+    }
+  }
+
   return {
     ...state,
     board,
     hands: { ...state.hands, [mover]: hand },
     decks: { ...state.decks, [mover]: deck },
     turn: otherPlayer(mover),
+    justFlipped,
   };
 }
 

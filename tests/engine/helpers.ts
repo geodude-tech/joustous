@@ -21,6 +21,7 @@ export function makeState(opts: {
   redDeck?: Card[];
   turn?: Player;
   gems?: [number, number][];
+  justFlipped?: [number, number][];
 } = {}): GameState {
   const board = opts.board ?? emptyBoard();
   for (const [r, c] of opts.gems ?? []) board[r][c].gem = true;
@@ -29,6 +30,7 @@ export function makeState(opts: {
     hands: { blue: opts.hand ?? [], red: opts.redHand ?? [] },
     decks: { blue: opts.deck ?? [], red: opts.redDeck ?? [] },
     turn: opts.turn ?? 'blue',
+    justFlipped: opts.justFlipped,
     result: null,
   };
 }

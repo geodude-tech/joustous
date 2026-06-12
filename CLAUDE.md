@@ -14,10 +14,10 @@ Vanilla TypeScript + Vite, no frameworks. Rules reference: `game_dynamics.md`.
 
 - `src/engine/` is **pure logic, no DOM** — `applyMove(state, move) -> state`. Every rule change goes here with a unit test first (project is TDD).
   - `types.ts` — `Direction` N/E/S/W, `Player` 'blue' (human) / 'red' (AI), `GameState`, `Move` (place | push)
-  - `rules.ts` — `legalMoves`, `applyMove`, chain-push resolution; a push is blocked if **any** card in the chain has the opposing arrow
+  - `rules.ts` — `legalMoves`, `applyMove`, chain-push resolution; a push is blocked if **any** card in the chain has the opposing arrow. `applyMove` records `justFlipped` (gem cells whose owner changed) on the next state
   - `game.ts` — `checkEnd`: deck-out loss, board-full / no-moves → most gems wins
   - `cards.ts` — card pool + packs (`basic`=1 arrow, `intermediate`=≤2, `advanced`=all); deck of 16, hand of 3
-  - `ai.ts` — alpha-beta minimax; depth = difficulty (easy 1 / medium 2 / hard 3), leaf eval gems/material/gem-adjacency, small root tempo bonus, random tie-break
+  - `ai.ts` — alpha-beta minimax; depth = difficulty (easy 1 / medium 2 / hard 3). Leaf eval: stability-weighted gems (a gem the non-owner can immediately re-flip counts half) / material / gem-adjacency. Medium+hard run a quiescence playout of claimed-gem flips at the horizon (easy stays greedy by design — tested). Root: small tempo bonus, HARASS penalty for gem-neutral pushes of opponent cards, RETALIATE penalty for instantly re-flipping a `justFlipped` gem, random pick among scores within `TIE_EPS`
 - `src/ui/render.ts` — full re-render per state change; `src/main.ts` wires callbacks, AI turn (1100 ms delay), and FLIP animations keyed on `data-cid`.
 - Gems are claimed only by *pushing* a card onto a gem square; direct placement on gem squares is illegal.
 

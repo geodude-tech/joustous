@@ -29,6 +29,8 @@ export interface GameState {
   hands: Record<Player, Card[]>;
   decks: Record<Player, Card[]>;
   turn: Player;
+  /** Gem cells whose owner changed on the previous move. */
+  justFlipped?: [number, number][];
   /** Set when the game has ended. */
   result: GameResult | null;
 }

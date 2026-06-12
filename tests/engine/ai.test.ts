@@ -103,3 +103,127 @@ describe('difficulty levels', () => {
     expect(wins.blue).toBeGreaterThan(wins.red);
   });
 });
+
+describe('gem stability', () => {
+  it.each<Difficulty>(['easy', 'medium', 'hard'])(
+    '%s locks its own contested gem instead of developing elsewhere',
+    (difficulty) => {
+      // Red holds the gem at (1,1); blue's E card can push red off it. Red's
+      // W card blocks that lane (placed at (1,2), or stacked onto the gem).
+      const board = emptyBoard();
+      board[1][1].gem = true;
+      board[1][1].placed = { card: card('R0', []), owner: 'red' };
+      const state = makeState({
+        board,
+        hand: [card('be1', ['E']), card('be2', ['E'])],
+        deck: [card('bd1', []), card('bd2', []), card('bd3', [])],
+        redHand: [card('rw', ['W']), card('rz', [])],
+        redDeck: [card('rd1', []), card('rd2', []), card('rd3', [])],
+        turn: 'red',
+      });
+      for (let i = 1; i <= 5; i++) {
+        const next = applyMove(state, chooseMove(state, rng(i), difficulty));
+        expect(next.board[1][1].placed?.owner).toBe('red');
+        // Whatever red played, blue must have no reply that retakes the gem.
+        for (const reply of legalMoves(next)) {
+          expect(applyMove(next, reply).board[1][1].placed?.owner).toBe('red');
+        }
+      }
+    },
+  );
+
+  it.each<Difficulty>(['medium', 'hard'])(
+    '%s develops instead of a gem flip the opponent immediately reverses',
+    (difficulty) => {
+      // Blue holds the gem; red's E card can flip it, but blue's E card flips
+      // it right back. Burning the threat card on a futile flip is worse than
+      // developing while keeping the gem contested.
+      const board = emptyBoard();
+      board[1][1].gem = true;
+      board[1][1].placed = { card: card('x', []), owner: 'blue' };
+      const state = makeState({
+        board,
+        hand: [card('be', ['E']), card('bz', [])],
+        deck: [card('bd1', []), card('bd2', []), card('bd3', []), card('bd4', [])],
+        redHand: [card('re', ['E']), card('rz', [])],
+        redDeck: [card('rd1', []), card('rd2', []), card('rd3', []), card('rd4', [])],
+        turn: 'red',
+      });
+      for (let i = 1; i <= 5; i++) {
+        expect(chooseMove(state, rng(i), difficulty).type).toBe('place');
+      }
+    },
+  );
+
+  it.each<Difficulty>(['easy', 'medium', 'hard'])(
+    '%s claims a gem with the card that locks it, not the one that loses it back',
+    (difficulty) => {
+      // Both red cards can claim the gem at (1,0). The W card faces blue's
+      // only attack lane (E) and locks the claim; the E card gets re-flipped.
+      const board = emptyBoard();
+      board[1][0].gem = true;
+      board[1][0].placed = { card: card('p', []), owner: 'blue' };
+      const state = makeState({
+        board,
+        hand: [card('be', ['E']), card('bz', [])],
+        deck: [card('bd1', []), card('bd2', []), card('bd3', [])],
+        redHand: [card('rw', ['W']), card('re', ['E'])],
+        redDeck: [card('rd1', []), card('rd2', []), card('rd3', [])],
+        turn: 'red',
+      });
+      for (let i = 1; i <= 5; i++) {
+        expect(chooseMove(state, rng(i), difficulty)).toEqual({
+          type: 'push',
+          handIndex: 0,
+          row: 1,
+          col: 0,
+          direction: 'W',
+        });
+      }
+    },
+  );
+
+  it('does not immediately re-flip the gem the opponent just took', () => {
+    // Blue just claimed the gem (justFlipped marks it). Red can win the gem
+    // war outright (two E answers to blue's one), so without the retaliation
+    // penalty retaking now and retaking later score the same and the tempo
+    // bonus picks "now". Natural play lets go for a turn and develops.
+    const board = emptyBoard();
+    board[1][1].gem = true;
+    board[1][1].placed = { card: card('B1', ['E']), owner: 'blue' };
+    const make = (justFlipped?: [number, number][]) =>
+      makeState({
+        board: board.map((row) => row.map((cell) => ({ ...cell }))),
+        hand: [card('be2', ['E']), card('bz', [])],
+        deck: [card('bd1', []), card('bd2', []), card('bd3', []), card('bd4', [])],
+        redHand: [card('re1', ['E']), card('re2', ['E']), card('rz', [])],
+        redDeck: [card('rd1', []), card('rd2', []), card('rd3', []), card('rd4', [])],
+        turn: 'red',
+        justFlipped,
+      });
+    for (let i = 1; i <= 5; i++) {
+      expect(chooseMove(make([[1, 1]]), rng(i), 'hard').type).toBe('place');
+    }
+    // Sanity: without the marker the same retake is taken — the penalty,
+    // not some other preference, is what defers it.
+    expect(chooseMove(make(), rng(1), 'hard')).toMatchObject({ type: 'push', row: 1, col: 1 });
+  });
+
+  it('varies its move across seeds when several lines are near-equal', () => {
+    const board = emptyBoard();
+    board[1][1].gem = true;
+    const state = makeState({
+      board,
+      hand: [card('bz1', []), card('bz2', [])],
+      deck: [card('bd1', []), card('bd2', [])],
+      redHand: [card('rn', ['N']), card('re', ['E']), card('rs', ['S'])],
+      redDeck: [card('rd1', []), card('rd2', []), card('rd3', []), card('rd4', [])],
+      turn: 'red',
+    });
+    const picks = new Set<string>();
+    for (let i = 1; i <= 12; i++) {
+      picks.add(JSON.stringify(chooseMove(state, rng(i), 'medium')));
+    }
+    expect(picks.size).toBeGreaterThan(1);
+  });
+});
