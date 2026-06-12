@@ -107,8 +107,7 @@ export function render(
 
   // Cells whose cards would slide for the pending push: key "r,c" -> directions
   const slideMarks = new Map<string, Direction[]>();
-  // Gem cells changing hands ("r,c" -> new owner) and cards sliding off the board.
-  const claimMarks = new Map<string, 'blue' | 'red'>();
+  // Cards sliding off the board.
   const fallMarks = new Set<string>();
   if (ui.pendingPush) {
     const { row, col, directions, armed } = ui.pendingPush;
@@ -119,7 +118,6 @@ export function render(
       if (move && move.type === 'push') {
         const preview = previewPush(state, move);
         for (const [r, c] of preview.chain) slideMarks.set(`${r},${c}`, [armed]);
-        for (const claim of preview.claims) claimMarks.set(`${claim.row},${claim.col}`, claim.owner);
         for (const [r, c] of preview.falls) fallMarks.add(`${r},${c}`);
       }
     } else {
@@ -166,13 +164,6 @@ export function render(
         ghost.className = 'slide-ghost';
         ghost.textContent = marks.map((d) => ARROW_GLYPHS[d]).join('');
         cellEl.appendChild(ghost);
-      }
-      const claim = claimMarks.get(`${r},${c}`);
-      if (claim) {
-        const badge = document.createElement('span');
-        badge.className = `claim-ghost ${claim}`;
-        badge.textContent = claim === 'blue' ? '+💎' : '−💎';
-        cellEl.appendChild(badge);
       }
       if (fallMarks.has(`${r},${c}`)) {
         const doom = document.createElement('span');

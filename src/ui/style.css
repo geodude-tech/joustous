@@ -315,33 +315,6 @@ body {
   50% { opacity: 0.35; }
 }
 
-/* Push preview: gem changing hands */
-.cell .claim-ghost {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  font-size: calc(var(--cell) * 0.18);
-  font-weight: bold;
-  padding: 1px 3px;
-  border-radius: 4px;
-  z-index: 11;
-  pointer-events: none;
-  animation: ghost-blink 0.8s ease-in-out infinite;
-  text-shadow: 0 0 3px #000;
-}
-
-.cell .claim-ghost.blue {
-  color: #fff;
-  background: var(--cyan-dark);
-  border: 1px solid var(--cyan);
-}
-
-.cell .claim-ghost.red {
-  color: #fff;
-  background: var(--red-dark);
-  border: 1px solid var(--red);
-}
-
 /* Push preview: card that would fall off the board */
 .cell .doom-ghost {
   position: absolute;
