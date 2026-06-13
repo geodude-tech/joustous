@@ -1,8 +1,8 @@
 import type { Board, Direction, GameState, Move, Player, PushMove } from './types';
-import { BOARD_SIZE, DELTAS, OPPOSITE, otherPlayer } from './types';
+import { DELTAS, OPPOSITE, otherPlayer } from './types';
 
-function inBounds(row: number, col: number): boolean {
-  return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+function inBounds(board: Board, row: number, col: number): boolean {
+  return row >= 0 && row < board.length && col >= 0 && col < board.length;
 }
 
 function cloneBoard(board: Board): Board {
@@ -12,17 +12,19 @@ function cloneBoard(board: Board): Board {
 export function legalMoves(state: GameState): Move[] {
   const moves: Move[] = [];
   const hand = state.hands[state.turn];
+  const size = state.board.length;
+  const walls = state.walls ?? false;
   for (let handIndex = 0; handIndex < hand.length; handIndex++) {
     const handCard = hand[handIndex];
-    for (let row = 0; row < BOARD_SIZE; row++) {
-      for (let col = 0; col < BOARD_SIZE; col++) {
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
         const cell = state.board[row][col];
         if (!cell.placed) {
           if (!cell.gem) moves.push({ type: 'place', handIndex, row, col });
           continue;
         }
         for (const direction of handCard.arrows) {
-          if (chainBlocked(state.board, row, col, direction)) continue;
+          if (chainBlocked(state.board, row, col, direction, walls)) continue;
           moves.push({ type: 'push', handIndex, row, col, direction });
         }
       }
@@ -32,22 +34,41 @@ export function legalMoves(state: GameState): Move[] {
 }
 
 /** Directions in which the chain starting at (row,col) can legally be pushed. */
-export function openPushDirections(board: Board, row: number, col: number): Direction[] {
-  return (Object.keys(DELTAS) as Direction[]).filter((d) => !chainBlocked(board, row, col, d));
+export function openPushDirections(
+  board: Board,
+  row: number,
+  col: number,
+  walls = false,
+): Direction[] {
+  return (Object.keys(DELTAS) as Direction[]).filter(
+    (d) => !chainBlocked(board, row, col, d, walls),
+  );
 }
 
-/** A push is blocked if any card in the contiguous chain has an opposing arrow. */
-function chainBlocked(board: Board, row: number, col: number, direction: Direction): boolean {
+/**
+ * A push is blocked if any card in the contiguous chain has an opposing arrow.
+ * On a walled board it is also blocked if the chain runs to the edge, since the
+ * trailing card would have nowhere on the board to land.
+ */
+function chainBlocked(
+  board: Board,
+  row: number,
+  col: number,
+  direction: Direction,
+  walls = false,
+): boolean {
   const [dr, dc] = DELTAS[direction];
   let r = row;
   let c = col;
-  let placed = inBounds(r, c) ? board[r][c].placed : null;
+  let placed = inBounds(board, r, c) ? board[r][c].placed : null;
   while (placed) {
     if (placed.card.arrows.includes(OPPOSITE[direction])) return true;
     r += dr;
     c += dc;
-    placed = inBounds(r, c) ? board[r][c].placed : null;
+    placed = inBounds(board, r, c) ? board[r][c].placed : null;
   }
+  // (r,c) is the landing cell for the trailing card; off-board means the wall blocks it.
+  if (walls && !inBounds(board, r, c)) return true;
   return false;
 }
 
@@ -62,7 +83,7 @@ export function pushChain(
   const chain: [number, number][] = [];
   let r = row;
   let c = col;
-  while (inBounds(r, c) && board[r][c].placed) {
+  while (inBounds(board, r, c) && board[r][c].placed) {
     chain.push([r, c]);
     r += dr;
     c += dc;
@@ -83,10 +104,11 @@ export interface PushPreview {
 export function previewPush(state: GameState, move: PushMove): PushPreview {
   const chain = pushChain(state.board, move.row, move.col, move.direction);
   const next = applyMove(state, move);
+  const size = state.board.length;
 
   const claims: PushPreview['claims'] = [];
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
       const before = state.board[r][c];
       const after = next.board[r][c];
       if (before.gem && after.placed && after.placed.owner !== before.placed?.owner) {
@@ -95,11 +117,12 @@ export function previewPush(state: GameState, move: PushMove): PushPreview {
     }
   }
 
+  // Walled boards never drop a card off the edge.
   const falls: PushPreview['falls'] = [];
   const last = chain[chain.length - 1];
-  if (last) {
+  if (last && !state.walls) {
     const [dr, dc] = DELTAS[move.direction];
-    if (!inBounds(last[0] + dr, last[1] + dc)) falls.push(last);
+    if (!inBounds(state.board, last[0] + dr, last[1] + dc)) falls.push(last);
   }
 
   return { chain, claims, falls };
@@ -113,7 +136,7 @@ function resolvePush(board: Board, move: PushMove): void {
     const [cr, cc] = chain[i];
     const nr = cr + dr;
     const nc = cc + dc;
-    if (inBounds(nr, nc)) board[nr][nc].placed = board[cr][cc].placed;
+    if (inBounds(board, nr, nc)) board[nr][nc].placed = board[cr][cc].placed;
     board[cr][cc].placed = null;
   }
 }
@@ -132,8 +155,9 @@ export function applyMove(state: GameState, move: Move): GameState {
   if (drawn) hand.push(drawn);
 
   const justFlipped: [number, number][] = [];
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
+  const size = board.length;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
       const cell = board[r][c];
       if (cell.gem && cell.placed && cell.placed.owner !== state.board[r][c].placed?.owner) {
         justFlipped.push([r, c]);

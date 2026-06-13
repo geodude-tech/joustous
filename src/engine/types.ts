@@ -31,6 +31,9 @@ export interface GameState {
   turn: Player;
   /** Gem cells whose owner changed on the previous move. */
   justFlipped?: [number, number][];
+  /** Walled board (basic mode): the edge is solid, so a push that would shove
+   *  a card off the board is illegal instead of removing the card. */
+  walls?: boolean;
   /** Set when the game has ended. */
   result: GameResult | null;
 }

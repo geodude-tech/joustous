@@ -51,8 +51,27 @@ export type Pack = 'basic' | 'intermediate' | 'advanced';
 
 const PACK_MAX_ARROWS: Record<Pack, number> = { basic: 1, intermediate: 2, advanced: 3 };
 
+/**
+ * Basic is a small, curated roster: five single-arrow cards covering all four
+ * directions plus three two-arrow cards as a gentle step up. Intermediate and
+ * advanced keep the open arrow-count filter over the whole pool.
+ */
+const BASIC_CARDS = [
+  'Tinker Knight', // N
+  'Goldarmor', // E
+  'Skull Fiend', // S
+  'Skeleton', // W
+  'Birder', // E
+  'Rat', // W,E
+  'Black Knight', // N,S
+  'Propeller Knight', // N,E
+];
+
 export function buildDeck(owner: Player, random: () => number, pack: Pack = 'advanced'): Card[] {
-  const defs = CARD_POOL.filter((d) => d.arrows.length <= PACK_MAX_ARROWS[pack]);
+  const defs =
+    pack === 'basic'
+      ? CARD_POOL.filter((d) => BASIC_CARDS.includes(d.name))
+      : CARD_POOL.filter((d) => d.arrows.length <= PACK_MAX_ARROWS[pack]);
   // Repeat the filtered pool so small pools (basic) can still fill a deck.
   const pool: CardDef[] = [];
   while (pool.length < DECK_SIZE) pool.push(...defs);

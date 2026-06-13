@@ -1,5 +1,6 @@
 :root {
   --cell: min(24vw, 110px);
+  --oob: calc(var(--cell) * 0.42);
   --hand-card: min(20vw, 90px);
   --cyan: #3ecfdb;
   --cyan-dark: #134a63;
@@ -162,6 +163,19 @@ body {
 }
 
 .cell:nth-child(even) { background: var(--tile-alt); }
+
+/* Walled-board out-of-bounds ring: a recessed, hatched border the player reads
+   as a solid wall — pushes toward it are blocked, nothing falls off. */
+.board.walled { padding: 6px; }
+
+.oob {
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(45deg, #0006 0 5px, #0000 5px 10px),
+    #271c0e;
+  box-shadow: inset 0 0 6px #000a;
+  pointer-events: none;
+}
 
 /* Glowing green gem like the real game */
 .cell .gem-icon {

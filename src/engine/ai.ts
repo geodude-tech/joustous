@@ -1,5 +1,5 @@
 import type { GameState, Move, Player } from './types';
-import { BOARD_SIZE, DELTAS, otherPlayer } from './types';
+import { DELTAS, otherPlayer } from './types';
 import { legalMoves, applyMove, openPushDirections, pushChain } from './rules';
 import { checkEnd, countGems } from './game';
 
@@ -56,8 +56,9 @@ function material(state: GameState, me: Player): number {
  *  around score higher than developing. Real threats are caught by search. */
 function gemAdjacency(state: GameState, me: Player): number {
   let a = 0;
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
+  const size = state.board.length;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
       const cell = state.board[r][c];
       if (!cell.gem || cell.placed) continue;
       for (const [dr, dc] of Object.values(DELTAS)) {
@@ -75,13 +76,14 @@ function gemAdjacency(state: GameState, me: Player): number {
  *  is blocked whenever the direct one is), so its own chains suffice. */
 function gemScore(state: GameState, me: Player): number {
   let score = 0;
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
+  const size = state.board.length;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
       const cell = state.board[r][c];
       if (!cell.gem || !cell.placed) continue;
       const owner = cell.placed.owner;
       const oppHand = state.hands[otherPlayer(owner)];
-      const contested = openPushDirections(state.board, r, c).some((d) =>
+      const contested = openPushDirections(state.board, r, c, state.walls).some((d) =>
         oppHand.some((card) => card.arrows.includes(d)),
       );
       const w = contested ? GEM_CONTESTED : GEM;

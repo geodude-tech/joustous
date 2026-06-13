@@ -132,11 +132,30 @@ export function render(
   }
 
   // Board
+  const size = state.board.length;
+  const walls = state.walls ?? false;
   const board = document.createElement('div');
-  board.className = 'board';
+  board.className = walls ? 'board walled' : 'board';
   board.dataset.testid = 'board';
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 3; c++) {
+  // Walled (basic) boards draw a shaded out-of-bounds ring so the solid edge —
+  // where pushes are blocked rather than dropping cards — is visible.
+  const track = walls
+    ? `var(--oob) ${'var(--cell) '.repeat(size).trim()} var(--oob)`
+    : `repeat(${size}, var(--cell))`;
+  board.style.gridTemplateColumns = track;
+  board.style.gridTemplateRows = track;
+  const off = walls ? 1 : 0;
+  const dim = size + off * 2;
+  for (let gr = 0; gr < dim; gr++) {
+    for (let gc = 0; gc < dim; gc++) {
+      const r = gr - off;
+      const c = gc - off;
+      if (r < 0 || r >= size || c < 0 || c >= size) {
+        const oob = document.createElement('div');
+        oob.className = 'oob';
+        board.appendChild(oob);
+        continue;
+      }
       const cell = state.board[r][c];
       const cellEl = document.createElement('div');
       cellEl.className = 'cell';

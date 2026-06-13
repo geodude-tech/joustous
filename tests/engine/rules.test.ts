@@ -88,6 +88,26 @@ describe('push mechanics', () => {
     expect(ids).not.toContain('x');
   });
 
+  it('on a walled board, a push that would shove a card off the edge is illegal', () => {
+    const board = emptyBoard();
+    board[1][2].placed = { card: card('x', []), owner: 'red' };
+    const state = makeState({ board, hand: [card('a', ['E'])], walls: true });
+    // No empty cell east of the occupant: the wall blocks the push entirely.
+    expect(legalMoves(state)).not.toContainEqual<Move>({
+      type: 'push', handIndex: 0, row: 1, col: 2, direction: 'E',
+    });
+  });
+
+  it('on a walled board, a push with an in-bounds landing cell stays legal', () => {
+    const board = emptyBoard();
+    board[1][1].placed = { card: card('x', []), owner: 'red' };
+    const state = makeState({ board, hand: [card('a', ['E'])], walls: true });
+    // (1,2) is empty and in-bounds, so the card has somewhere to slide.
+    expect(legalMoves(state)).toContainEqual<Move>({
+      type: 'push', handIndex: 0, row: 1, col: 1, direction: 'E',
+    });
+  });
+
   it('a card can be pushed ONTO a gem square (gem claim via push)', () => {
     const board = emptyBoard();
     board[1][1].gem = true;

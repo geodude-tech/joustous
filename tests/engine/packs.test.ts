@@ -15,10 +15,16 @@ function rng(seed: number): () => number {
 }
 
 describe('card packs', () => {
-  it('basic decks contain only 1-arrow cards', () => {
+  it('basic decks are a small curated roster of 1-2 arrow cards with a few doubles', () => {
     const deck = buildDeck('blue', rng(5), 'basic');
     expect(deck).toHaveLength(DECK_SIZE);
-    for (const c of deck) expect(c.arrows).toHaveLength(1);
+    for (const c of deck) expect(c.arrows.length).toBeLessThanOrEqual(2);
+    // Small distinct roster (8 curated cards), repeated to fill the deck.
+    expect(new Set(deck.map((c) => c.name)).size).toBeLessThanOrEqual(8);
+    // A few double-arrow cards are present, but singles still dominate.
+    const doubles = new Set(deck.filter((c) => c.arrows.length === 2).map((c) => c.name));
+    expect(doubles.size).toBeGreaterThanOrEqual(2);
+    expect(doubles.size).toBeLessThanOrEqual(3);
   });
 
   it('intermediate decks contain only 1-2 arrow cards', () => {
@@ -41,8 +47,16 @@ describe('card packs', () => {
   it('newGame accepts a pack', () => {
     const state = newGame(rng(7), 'basic');
     for (const c of [...state.hands.blue, ...state.decks.blue]) {
-      expect(c.arrows).toHaveLength(1);
+      expect(c.arrows.length).toBeLessThanOrEqual(2);
     }
+  });
+
+  it('basic mode is a walled 2x2 board with two gems', () => {
+    const state = newGame(rng(7), 'basic');
+    expect(state.walls).toBe(true);
+    const cells = state.board.flat();
+    expect(cells).toHaveLength(4);
+    expect(cells.filter((c) => c.gem)).toHaveLength(2);
   });
 });
 

@@ -31,9 +31,10 @@ test('rules can be viewed from pack select and dismissed', async ({ page }) => {
 });
 
 test('board, hands and status render on mobile viewport', async ({ page }) => {
+  // Basic mode is a compact 2x2 board with two gems.
   await expect(page.getByTestId('board')).toBeVisible();
-  await expect(page.locator('.cell')).toHaveCount(9);
-  await expect(page.locator('.gem-icon')).toHaveCount(3);
+  await expect(page.locator('.cell')).toHaveCount(4);
+  await expect(page.locator('.gem-icon')).toHaveCount(2);
   await expect(page.locator('[data-testid="hand"] .card')).toHaveCount(3);
   await expect(page.locator('[data-testid="foe-hand"] .card')).toHaveCount(3);
   await page.screenshot({ path: 'e2e/screenshots/01-initial.png' });
