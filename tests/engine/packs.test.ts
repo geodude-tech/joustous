@@ -51,12 +51,12 @@ describe('card packs', () => {
     }
   });
 
-  it('basic mode is a walled 2x2 board with two gems', () => {
+  it('basic mode is a walled 2x2 board with one gem', () => {
     const state = newGame(rng(7), 'basic');
     expect(state.walls).toBe(true);
     const cells = state.board.flat();
     expect(cells).toHaveLength(4);
-    expect(cells.filter((c) => c.gem)).toHaveLength(2);
+    expect(cells.filter((c) => c.gem)).toHaveLength(1);
   });
 });
 

@@ -7,16 +7,14 @@ const HAND_SIZE = 3;
  *  tutorial boards); the others use the standard 3x3. */
 export const BOARD_SIZES: Record<Pack, number> = { basic: 2, intermediate: 3, advanced: 3 };
 
-/** Semi-random gem layouts keyed by board size. 2x2 uses 2-gem patterns so the
- *  two non-gem cells stay placeable; 3x3 uses L-shapes and lines. */
+/** Semi-random gem layouts keyed by board size. 2x2 uses a single gem (the
+ *  other three cells stay placeable); 3x3 uses L-shapes and lines. */
 const GEM_LAYOUTS: Record<number, [number, number][][]> = {
   2: [
-    [[0, 0], [1, 1]],
-    [[0, 1], [1, 0]],
-    [[0, 0], [0, 1]],
-    [[1, 0], [1, 1]],
-    [[0, 0], [1, 0]],
-    [[0, 1], [1, 1]],
+    [[0, 0]],
+    [[0, 1]],
+    [[1, 0]],
+    [[1, 1]],
   ],
   3: [
     [[0, 0], [0, 1], [1, 0]],
