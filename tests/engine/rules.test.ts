@@ -1,7 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { emptyBoard, makeState, card } from './helpers';
 import { legalMoves, applyMove } from '../../src/engine/rules';
-import type { Move } from '../../src/engine/types';
+import type { Cell, Move } from '../../src/engine/types';
+
+/** A 4x4 board with a one-cell out-of-bounds ring around a 2x2 play area. */
+function ringedBoard(): Cell[][] {
+  return Array.from({ length: 4 }, (_, r) =>
+    Array.from({ length: 4 }, (_, c): Cell => {
+      const cell: Cell = { gem: false, placed: null };
+      if (r === 0 || r === 3 || c === 0 || c === 3) cell.oob = true;
+      return cell;
+    }),
+  );
+}
 
 describe('placement', () => {
   it('allows placing on an empty non-gem square', () => {
@@ -106,6 +117,27 @@ describe('push mechanics', () => {
     expect(legalMoves(state)).toContainEqual<Move>({
       type: 'push', handIndex: 0, row: 1, col: 1, direction: 'E',
     });
+  });
+
+  it('walled OOB ring: a play-area card can be pushed into the ring once, then no further', () => {
+    const board = ringedBoard();
+    board[1][2].placed = { card: card('x', []), owner: 'red' }; // inner cell at the east edge
+    const state = makeState({ board, hand: [card('a', ['E'])], walls: true });
+    // First push hops x off the play area into the ring cell (1,3).
+    expect(legalMoves(state)).toContainEqual<Move>({
+      type: 'push', handIndex: 0, row: 1, col: 2, direction: 'E',
+    });
+    const next = applyMove(state, { type: 'push', handIndex: 0, row: 1, col: 2, direction: 'E' });
+    expect(next.board[1][3].placed?.card.id).toBe('x'); // sits in the ring, not removed
+    expect(next.board[1][2].placed?.card.id).toBe('a');
+
+    // The lane now runs to the outer wall: pushing it again is blocked — no second hop.
+    const state2 = makeState({ board: next.board, hand: [card('b', ['E'])], walls: true });
+    expect(legalMoves(state2)).not.toContainEqual<Move>({
+      type: 'push', handIndex: 0, row: 1, col: 2, direction: 'E',
+    });
+    // And the ring card itself is never a push origin.
+    expect(legalMoves(state2).some((m) => m.row === 1 && m.col === 3)).toBe(false);
   });
 
   it('a card can be pushed ONTO a gem square (gem claim via push)', () => {

@@ -137,26 +137,20 @@ export function render(
   const board = document.createElement('div');
   board.className = walls ? 'board walled' : 'board';
   board.dataset.testid = 'board';
-  // Walled (basic) boards draw a shaded out-of-bounds ring so the solid edge —
-  // where pushes are blocked rather than dropping cards — is visible.
-  const track = walls
-    ? `var(--oob) ${'var(--cell) '.repeat(size).trim()} var(--oob)`
-    : `repeat(${size}, var(--cell))`;
-  board.style.gridTemplateColumns = track;
-  board.style.gridTemplateRows = track;
-  const off = walls ? 1 : 0;
-  const dim = size + off * 2;
-  for (let gr = 0; gr < dim; gr++) {
-    for (let gc = 0; gc < dim; gc++) {
-      const r = gr - off;
-      const c = gc - off;
-      if (r < 0 || r >= size || c < 0 || c >= size) {
+  board.style.gridTemplateColumns = `repeat(${size}, var(--cell))`;
+  board.style.gridTemplateRows = `repeat(${size}, var(--cell))`;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const cell = state.board[r][c];
+      // Shaded out-of-bounds ring: a card pushed off the play area lands here
+      // (once) and is shown sitting in the ring; the cell takes no input.
+      if (cell.oob) {
         const oob = document.createElement('div');
         oob.className = 'oob';
+        if (cell.placed) oob.appendChild(cardEl(cell.placed.card, cell.placed.owner));
         board.appendChild(oob);
         continue;
       }
-      const cell = state.board[r][c];
       const cellEl = document.createElement('div');
       cellEl.className = 'cell';
       cellEl.dataset.row = String(r);

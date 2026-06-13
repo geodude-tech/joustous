@@ -19,6 +19,9 @@ export function legalMoves(state: GameState): Move[] {
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
         const cell = state.board[row][col];
+        // OOB ring cells can't be placed on or pushed from; they only ever
+        // receive a card pushed in from the play area.
+        if (cell.oob) continue;
         if (!cell.placed) {
           if (!cell.gem) moves.push({ type: 'place', handIndex, row, col });
           continue;

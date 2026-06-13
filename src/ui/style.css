@@ -1,6 +1,5 @@
 :root {
   --cell: min(24vw, 110px);
-  --oob: calc(var(--cell) * 0.42);
   --hand-card: min(20vw, 90px);
   --cyan: #3ecfdb;
   --cyan-dark: #134a63;
@@ -137,6 +136,8 @@ body {
   .panel.foe { order: 1; }
 
   .hand { flex-direction: column; }
+
+  .board.walled { --cell: min(16vh, 82px); }
 }
 
 /* Board: wood frame, checkered tiles */
@@ -164,11 +165,20 @@ body {
 
 .cell:nth-child(even) { background: var(--tile-alt); }
 
-/* Walled-board out-of-bounds ring: a recessed, hatched border the player reads
-   as a solid wall — pushes toward it are blocked, nothing falls off. */
-.board.walled { padding: 6px; }
+/* Walled-board out-of-bounds ring: recessed, hatched tiles the player reads as
+   the wall. A card can be pushed into a ring tile once and sits there; the
+   outer edge past the ring stops it going further. The 4-wide grid (2x2 play
+   area + ring) uses a smaller cell so it still fits a phone. */
+.board.walled {
+  --cell: min(18vw, 82px);
+  padding: 6px;
+}
 
 .oob {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 3px;
   background:
     repeating-linear-gradient(45deg, #0006 0 5px, #0000 5px 10px),

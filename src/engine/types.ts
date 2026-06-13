@@ -17,6 +17,10 @@ export interface PlacedCard {
 export interface Cell {
   gem: boolean;
   placed: PlacedCard | null;
+  /** Out-of-bounds ring cell (walled boards): cannot be placed on or pushed
+   *  from, but a card can be pushed *into* it once. The outer edge past the
+   *  ring is a hard wall, so a card here cannot be shoved any further. */
+  oob?: boolean;
 }
 
 export const BOARD_SIZE = 3;

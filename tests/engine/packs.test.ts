@@ -51,12 +51,16 @@ describe('card packs', () => {
     }
   });
 
-  it('basic mode is a walled 2x2 board with one gem', () => {
+  it('basic mode is a 2x2 play area wrapped in a walled out-of-bounds ring with one gem', () => {
     const state = newGame(rng(7), 'basic');
     expect(state.walls).toBe(true);
     const cells = state.board.flat();
-    expect(cells).toHaveLength(4);
+    expect(cells).toHaveLength(16); // 4x4: 2x2 play area + one-cell ring
+    expect(cells.filter((c) => !c.oob)).toHaveLength(4); // play area
+    expect(cells.filter((c) => c.oob)).toHaveLength(12); // ring
     expect(cells.filter((c) => c.gem)).toHaveLength(1);
+    // Gems only sit on play cells, never the ring.
+    expect(cells.every((c) => !(c.gem && c.oob))).toBe(true);
   });
 });
 
