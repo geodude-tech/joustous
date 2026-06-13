@@ -21,8 +21,9 @@ export function checkEnd(state: GameState): GameResult | null {
     return { winner: otherPlayer(mover), reason: 'deck-out', gems };
   }
 
-  // Per the manual, the match ends when the open squares are full.
-  const boardFull = state.board.every((row) => row.every((cell) => cell.placed));
+  // Per the manual, the match ends when the open (playable) squares are full.
+  // OOB ring cells don't count — they only ever catch a pushed-out card.
+  const boardFull = state.board.every((row) => row.every((cell) => cell.oob || cell.placed));
 
   if (boardFull || legalMoves(state).length === 0) {
     const winner = gems.blue > gems.red ? 'blue' : gems.red > gems.blue ? 'red' : null;

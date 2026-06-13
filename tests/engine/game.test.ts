@@ -2,6 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { emptyBoard, makeState, card } from './helpers';
 import { checkEnd, countGems } from '../../src/engine/game';
 import { applyMove, legalMoves } from '../../src/engine/rules';
+import type { Cell } from '../../src/engine/types';
+
+/** A 4x4 walled board: a 2x2 play area wrapped in a one-cell out-of-bounds ring. */
+function ringedBoard(): Cell[][] {
+  return Array.from({ length: 4 }, (_, r) =>
+    Array.from({ length: 4 }, (_, c): Cell => {
+      const cell: Cell = { gem: false, placed: null };
+      if (r === 0 || r === 3 || c === 0 || c === 3) cell.oob = true;
+      return cell;
+    }),
+  );
+}
 
 function fillBoardNoMoves() {
   // Full board where every card resists every push (all 4 arrows... but
@@ -53,6 +65,24 @@ describe('end conditions', () => {
     const state = makeState({ board, hand: [card('a', ['N'])] });
     const result = checkEnd(state);
     expect(result?.winner).toBeNull();
+  });
+
+  it('ends when the playable area is full, even with the OOB ring empty and pushes left', () => {
+    const board = ringedBoard();
+    // Fill the play area; the gem is held by blue. Arrowless cards keep pushes legal.
+    for (let r = 1; r <= 2; r++) {
+      for (let c = 1; c <= 2; c++) {
+        board[r][c].placed = { card: card(`p${r}${c}`, []), owner: 'blue' };
+      }
+    }
+    board[1][1].gem = true;
+    const state = makeState({ board, hand: [card('a', ['E'])], walls: true });
+    // A push into the empty ring is still a legal move...
+    expect(legalMoves(state).length).toBeGreaterThan(0);
+    // ...but the match is already over because the play area is full.
+    const result = checkEnd(state);
+    expect(result?.reason).toBe('gems');
+    expect(result?.winner).toBe('blue');
   });
 
   it('player with empty hand and deck loses (deck-out)', () => {
